@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
+import "openzeppelin-contracts/token/ERC721/ERC721.sol";
 
 interface IERC20 {
     function totalSupply() external view returns (uint256);
@@ -14,19 +15,41 @@ interface IDiva is IERC20{
     function delegate(address delegatee) external;
 }
 
-contract DelegateReward {
-
-    IDiva public diva;
-    address public delegatee;
-
-    constructor(address divaAddress, address _delegatee) {
-        diva = IDiva(divaAddress);
-        delegatee = _delegatee;
-        diva.delegate(delegatee);
+contract DelegateReward is ERC721 {
+    struct Stake {
+        uint amount;
+        uint deadline;
     }
 
-    function delegateAndClaim(uint amount) public {
+    IDiva public diva;
+    address public DELEGATEE;
+    uint public STAKE_TIME;
+    uint public nftCount;
+    mapping(uint nftId => Stake) public stakes;
+
+
+    constructor(address divaAddress, address delegatee, uint stakeTime)
+        ERC721("Diva Delegator Token", "DDT")
+    {
+        diva = IDiva(divaAddress);
+        DELEGATEE = delegatee;
+        diva.delegate(DELEGATEE);
+        STAKE_TIME = stakeTime;
+    }
+
+    function delegateAndMint(uint amount) public {
         diva.transferFrom(msg.sender, address(this), amount);
-        diva.delegate(delegatee);
+
+        _mint(msg.sender, nftCount);
+        stakes[nftCount] = Stake(amount, block.timestamp + STAKE_TIME);
+        nftCount += 1;
+    }
+
+    function undelegateAndBurn(uint nftId) public {
+        require(msg.sender == ownerOf(nftId), "Must be nft owner");
+        require(block.timestamp >= stakes[nftId].deadline, "Staking period not over");
+        _burn(nftId);
+        //TODO: currently blocked by Diva
+        //diva.transfer(msg.sender, stakes[nftId].amount);
     }
 }
