@@ -1,0 +1,7 @@
+{
+    "projectName": "DelegationStaking",
+    "namespace": "DelegationStaking.Contracts",
+    "lang": 0,
+    "autoCodeGen": true,
+    "projectPath": "../"
+}
